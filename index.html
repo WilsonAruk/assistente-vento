@@ -6,17 +6,14 @@
 <style>
 /* Layout: coluna única estilo app mobile — controles no topo, leitura do resultado logo abaixo, alvo como fechamento */
 :root{
-  --bg:#EEF2F0; --surface:#FFFFFF; --ink:#13201B; --muted:#5B6B64; --line:#D5DED9;
-  --accent:#0E6B57; --accent-soft:#DCEFE9; --wind:#1F5FA8; --warn:#A8630A; --warn-soft:#FBEFD9;
+  /* Tema único claro: fundo branco sempre, mesmo com o celular em modo escuro */
+  --bg:#FFFFFF; --surface:#FFFFFF; --ink:#13201B; --muted:#5B6B64; --line:#DDE4E0;
+  --accent:#0E6B57; --accent-soft:#E3F2ED; --wind:#1F5FA8; --warn:#A8630A; --warn-soft:#FBEFD9;
   --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --f-body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0E1513; --surface:#17211E; --ink:#E6EEEA; --muted:#93A59D; --line:#2A3833;
-  --accent:#4CC2A4; --accent-soft:#183A31; --wind:#7DB0EC; --warn:#E9A64A; --warn-soft:#3A2B14; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0E1513; --surface:#17211E; --ink:#E6EEEA; --muted:#93A59D; --line:#2A3833;
-  --accent:#4CC2A4; --accent-soft:#183A31; --wind:#7DB0EC; --warn:#E9A64A; --warn-soft:#3A2B14; color-scheme:dark}
+html{background:#FFFFFF}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
 .wrap{max-width:460px;margin:0 auto;padding-inline:16px;padding-block:18px 40px;display:flex;flex-direction:column;gap:14px}
 header h1{font-family:var(--f-display);font-weight:700;font-size:30px;letter-spacing:.01em;margin:0;text-wrap:balance}
