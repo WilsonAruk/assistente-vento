@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Assistente de Vento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: coluna única estilo app mobile — controles no topo, leitura do resultado logo abaixo, alvo como fechamento */
+:root{
+  --bg:#EEF2F0; --surface:#FFFFFF; --ink:#13201B; --muted:#5B6B64; --line:#D5DED9;
+  --accent:#0E6B57; --accent-soft:#DCEFE9; --wind:#1F5FA8; --warn:#A8630A; --warn-soft:#FBEFD9;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E1513; --surface:#17211E; --ink:#E6EEEA; --muted:#93A59D; --line:#2A3833;
+  --accent:#4CC2A4; --accent-soft:#183A31; --wind:#7DB0EC; --warn:#E9A64A; --warn-soft:#3A2B14; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1513; --surface:#17211E; --ink:#E6EEEA; --muted:#93A59D; --line:#2A3833;
+  --accent:#4CC2A4; --accent-soft:#183A31; --wind:#7DB0EC; --warn:#E9A64A; --warn-soft:#3A2B14; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+.wrap{max-width:460px;margin:0 auto;padding-inline:16px;padding-block:18px 40px;display:flex;flex-direction:column;gap:14px}
+header h1{font-family:var(--f-display);font-weight:700;font-size:30px;letter-spacing:.01em;margin:0;text-wrap:balance}
+header p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:14px}
+.lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between;gap:8px}
+.lbl b{color:var(--ink);font-family:var(--f-display);font-size:16px;letter-spacing:.02em;text-transform:none}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font:600 14px var(--f-body);padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+.chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--wind);outline-offset:2px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.windrow{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:center}
+.windrow>div{min-width:0;display:flex;flex-direction:column;gap:14px}
+#dial{width:150px;height:150px;touch-action:none;cursor:pointer}
+#dial text{font:600 10px var(--f-body);fill:var(--muted)}
+.hint{font-size:12px;color:var(--muted);margin-top:4px}
+.res{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+.res h2{margin:0 0 4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.big{font-family:var(--f-display);font-weight:700;font-size:44px;line-height:1;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.big small{font-size:24px;color:var(--wind)}
+.sub{margin:6px 0 10px;font-size:14px}
+.pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);font-variant-numeric:tabular-nums}
+.pill.conf-alta{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.pill.conf-média,.pill.conf-baixa{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.aim{background:var(--accent-soft);border:none}
+.aim .big{color:var(--accent);font-size:30px}
+.aim p{margin:6px 0 0;font-size:14px}
+.tgt{display:flex;flex-direction:column;align-items:center;gap:8px}
+#target{width:100%;max-width:320px;height:auto}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap;justify-content:center}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.note{font-size:12px;color:var(--muted);text-align:center}
+@media (max-width:380px){.windrow{grid-template-columns:1fr;justify-items:center}.windrow>div{width:100%}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Assistente de Vento</h1>
+    <p>Estimativa de como o vento desloca o impacto da flecha. Ferramenta de treino, não previsão exata.</p>
+  </header>
+
+  <section class="panel" aria-label="Configuração">
+    <div><div class="lbl">Distância</div><div class="chips" id="dist"></div></div>
+    <div><div class="lbl">Face do alvo</div><div class="chips" id="face"></div></div>
+    <div><div class="lbl">Arco</div><div class="chips" id="bow"></div></div>
+    <div>
+      <div class="lbl"><span>Velocidade da flecha</span><b id="v0lbl"></b></div>
+      <input type="range" id="v0" min="40" max="100" step="1">
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Vento">
+    <div class="windrow">
+      <svg id="dial" viewBox="0 0 150 150" role="slider" aria-label="Direção de onde vem o vento" tabindex="0"></svg>
+      <div>
+        <div>
+          <div class="lbl"><span>Vento</span><b id="wlbl"></b></div>
+          <input type="range" id="wind" min="0" max="40" step="0.5">
+        </div>
+        <div>
+          <div class="lbl"><span>Rajadas</span><b id="glbl"></b></div>
+          <input type="range" id="gust" min="0" max="0.6" step="0.05">
+        </div>
+        <div class="hint" id="dirlbl"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="res">
+    <h2>Deriva lateral estimada</h2>
+    <div class="big"><span id="latV"></span><small id="latD"></small></div>
+    <p class="sub" id="latS"></p>
+    <div class="pills" id="latP"></div>
+  </section>
+
+  <section class="res">
+    <h2>Efeito vertical estimado</h2>
+    <div class="big"><span id="verV"></span><small id="verD"></small></div>
+    <p class="sub" id="verS"></p>
+  </section>
+
+  <section class="res aim">
+    <h2>Correção de mira</h2>
+    <div class="big" id="aimV"></div>
+    <p id="aimS"></p>
+  </section>
+
+  <section class="res tgt">
+    <h2 id="tgtH">Impacto estimado</h2>
+    <svg id="target" viewBox="-110 -110 220 220" aria-label="Alvo com ponto de impacto"></svg>
+    <div class="legend">
+      <span><i style="background:var(--ink)"></i>Impacto com vento</span>
+      <span><i style="border:2px solid var(--wind);width:8px;height:8px"></i>Faixa provável</span>
+      <span><i style="background:var(--accent)"></i>Ponto de mira</span>
+    </div>
+    <p class="note">Mira zerada na distância sem vento. Não considera turbulência nem o “weathervaning” da flecha.</p>
+  </section>
+</div>
+
+<script>
+/**
+ * WindEngine — motor de cálculo do Assistente de Vento (tiro com arco)
+ * ---------------------------------------------------------------------
+ * Modelo: flecha como ponto de massa com arrasto quadrático em relação ao AR
+ * (não ao solo), integração numérica 3D. Assim o vento afeta a flecha do
+ * jeito físico correto:
+ *   - vento lateral  -> deriva lateral (≈ W · (t − D/v0), a "lei do atraso")
+ *   - vento de cauda -> menos arrasto, chega mais rápido -> acerta mais ALTO
+ *   - vento de frente-> mais arrasto, chega mais lento  -> acerta mais BAIXO
+ *
+ * A mira é "zerada" na distância sem vento; o resultado é o desvio causado
+ * só pelo vento. Não modela weathervaning (a flecha girando para o vento),
+ * rajadas reais nem turbulência — por isso o resultado é uma FAIXA.
+ *
+ * Sem dependências. Funciona no navegador (window.WindEngine), Node/React
+ * Native (module.exports) e pode ser portado 1:1 para Dart/Kotlin/Swift.
+ */
+(function (root) {
+  const G = 9.81;
+
+  // v0 em m/s; k = coeficiente de arrasto por metro (a = k·v²).
+  // k calibrado para perda típica de velocidade em 70 m (recurvo ~18%).
+  const BOW_PRESETS = {
+    recurve:  { v0: 62, k: 0.0029 }, // recurvo olímpico (~203 fps)
+    compound: { v0: 88, k: 0.0022 }, // composto (~289 fps)
+    barebow:  { v0: 57, k: 0.0031 },
+    longbow:  { v0: 50, k: 0.0036 },
+  };
+
+  /** Converte direção "de onde o vento vem" (graus, 0 = vem do alvo,
+   *  90 = vem da direita, 180 = vem das costas, 270 = vem da esquerda)
+   *  em componentes no referencial do arqueiro (m/s). */
+  function windVector(speedKmh, fromDeg) {
+    const w = speedKmh / 3.6;
+    const th = (fromDeg * Math.PI) / 180;
+    return {
+      along: -w * Math.cos(th), // + = vento de cauda (empurra para o alvo)
+      cross: -w * Math.sin(th), // + = empurra para a DIREITA
+    };
+  }
+
+  /** Voo até o plano do alvo. Retorna altura (y), lateral (z), tempo, vel. */
+  function fly(v0, angle, k, wind, D, dt = 0.0005) {
+    let x = 0, y = 0, z = 0, t = 0;
+    let vx = v0 * Math.cos(angle), vy = v0 * Math.sin(angle), vz = 0;
+    let px = 0, py = 0, pz = 0, pt = 0;
+    while (x < D && t < 8) {
+      px = x; py = y; pz = z; pt = t;
+      const rx = vx - wind.along, ry = vy, rz = vz - wind.cross;
+      const s = Math.hypot(rx, ry, rz);
+      vx += -k * s * rx * dt;
+      vy += (-G - k * s * ry) * dt;
+      vz += -k * s * rz * dt;
+      x += vx * dt; y += vy * dt; z += vz * dt; t += dt;
+    }
+    const f = (D - px) / (x - px || 1);
+    return {
+      y: py + (y - py) * f,
+      z: pz + (z - pz) * f,
+      t: pt + (t - pt) * f,
+      v: Math.hypot(vx, vy, vz),
+    };
+  }
+
+  /** Ângulo de lançamento que zera na distância D sem vento (bisseção). */
+  function zeroAngle(v0, k, D) {
+    let lo = 0, hi = 0.35;
+    const calm = { along: 0, cross: 0 };
+    for (let i = 0; i < 40; i++) {
+      const mid = (lo + hi) / 2;
+      if (fly(v0, mid, k, calm, D).y < 0) lo = mid; else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+
+  function single(v0, k, D, angle, speedKmh, fromDeg) {
+    const r = fly(v0, angle, k, windVector(speedKmh, fromDeg), D);
+    return { lateralCm: r.z * 100, verticalCm: r.y * 100, t: r.t, v: r.v };
+  }
+
+  /**
+   * Cálculo principal.
+   * @param {object} p
+   *  distance   m (ex.: 70)
+   *  faceCm     diâmetro do alvo (122, 80, 60, 40)
+   *  bow        'recurve' | 'compound' | 'barebow' | 'longbow'
+   *  v0         m/s (opcional; sobrescreve o preset)
+   *  windKmh    velocidade do vento
+   *  windFrom   graus, de onde o vento VEM (0 alvo, 90 dir., 180 costas, 270 esq.)
+   *  gust       variação de rajada 0–1 (ex.: 0.2 = ±20%)
+   */
+  function calculate(p) {
+    const preset = BOW_PRESETS[p.bow] || BOW_PRESETS.recurve;
+    const v0 = p.v0 || preset.v0;
+    const k = preset.k;
+    const D = p.distance;
+    const gust = p.gust ?? 0.2;
+    const angle = zeroAngle(v0, k, D);
+
+    const nom = single(v0, k, D, angle, p.windKmh, p.windFrom);
+    const lo = single(v0, k, D, angle, p.windKmh * (1 - gust), p.windFrom);
+    const hi = single(v0, k, D, angle, p.windKmh * (1 + gust), p.windFrom);
+    const calm = single(v0, k, D, angle, 0, 0);
+
+    // ±10% de incerteza do modelo (arrasto real varia com flecha/penas)
+    const band = (a, b) => {
+      const m1 = Math.abs(a) * 0.9, m2 = Math.abs(b) * 1.1;
+      return [Math.min(m1, m2), Math.max(m1, m2)];
+    };
+
+    const wv = windVector(p.windKmh, p.windFrom);
+    const ringCm = p.faceCm / 20; // largura de cada anel (10 anéis no raio)
+
+    // Confiança: piora com vento forte, rajada alta e distância longa
+    let score = 0;
+    if (p.windKmh > 15) score++;
+    if (p.windKmh > 25) score++;
+    if (gust > 0.3) score++;
+    if (D >= 60) score++;
+    const confidence = score <= 1 ? 'alta' : score <= 2 ? 'média' : 'baixa';
+
+    return {
+      v0, k, distance: D, faceCm: p.faceCm, ringCm,
+      flightTime: [Math.min(lo.t, hi.t), Math.max(lo.t, hi.t)],
+      impactSpeed: nom.v,
+      crosswindKmh: Math.abs(wv.cross) * 3.6,
+      alongwindKmh: wv.along * 3.6, // + cauda, − frente
+      lateral: {
+        cm: nom.lateralCm,
+        range: band(lo.lateralCm, hi.lateralCm),
+        dir: nom.lateralCm > 0.05 ? 'direita' : nom.lateralCm < -0.05 ? 'esquerda' : null,
+        rings: Math.abs(nom.lateralCm) / ringCm,
+      },
+      vertical: {
+        cm: nom.verticalCm - calm.verticalCm,
+        range: band(lo.verticalCm - calm.verticalCm, hi.verticalCm - calm.verticalCm),
+        dir: nom.verticalCm - calm.verticalCm > 0.05 ? 'cima'
+           : nom.verticalCm - calm.verticalCm < -0.05 ? 'baixo' : null,
+        rings: Math.abs(nom.verticalCm - calm.verticalCm) / ringCm,
+      },
+      // Correção de mira = o oposto do desvio
+      aim: { xCm: -nom.lateralCm, yCm: -(nom.verticalCm - calm.verticalCm) },
+      confidence,
+    };
+  }
+
+  const api = { calculate, windVector, BOW_PRESETS };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.WindEngine = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+const S={distance:70,faceCm:122,bow:'recurve',v0:62,windKmh:7.1,windFrom:225,gust:0.2};
+const $=id=>document.getElementById(id);
+const fmt=(n,d=0)=>n.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+
+function chips(el,opts,key,after){
+  $(el).innerHTML=opts.map(o=>`<button type="button" data-v="${o.v}">${o.t}</button>`).join('');
+  $(el).addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+    const v=b.dataset.v; S[key]=isNaN(+v)?v:+v; after&&after(); render();});
+}
+chips('dist',[18,30,50,60,70,90].map(v=>({v,t:v+' m'})),'distance');
+chips('face',[122,80,60,40].map(v=>({v,t:v+' cm'})),'faceCm');
+chips('bow',[{v:'recurve',t:'Recurvo'},{v:'compound',t:'Composto'},{v:'barebow',t:'Barebow'},{v:'longbow',t:'Longbow'}],'bow',
+  ()=>{S.v0=WindEngine.BOW_PRESETS[S.bow].v0;});
+['v0','wind','gust'].forEach(id=>$(id).addEventListener('input',e=>{
+  S[{v0:'v0',wind:'windKmh',gust:'gust'}[id]]=+e.target.value;render();}));
+
+/* Rosa dos ventos: o arqueiro está no centro olhando para o alvo (topo) */
+const DIRS=['Do alvo','Frente-dir.','Direita','Trás-dir.','De trás','Trás-esq.','Esquerda','Frente-esq.'];
+function dirName(d){return DIRS[Math.round(((d%360)+360)%360/45)%8];}
+function drawDial(){
+  const r=58, th=(S.windFrom-90)*Math.PI/180, sx=75+r*Math.cos(th), sy=75+r*Math.sin(th);
+  const ex=75-34*Math.cos(th), ey=75-34*Math.sin(th);
+  let ticks='';
+  for(let i=0;i<16;i++){const a=(i*22.5-90)*Math.PI/180, l=i%2?4:8;
+    ticks+=`<line x1="${75+66*Math.cos(a)}" y1="${75+66*Math.sin(a)}" x2="${75+(66-l)*Math.cos(a)}" y2="${75+(66-l)*Math.sin(a)}" stroke="var(--line)" stroke-width="2"/>`;}
+  $('dial').innerHTML=`
+    <circle cx="75" cy="75" r="68" fill="var(--bg)" stroke="var(--line)"/>
+    ${ticks}
+    <text x="75" y="22" text-anchor="middle">ALVO</text>
+    <circle cx="75" cy="10" r="0"/>
+    <text x="133" y="79" text-anchor="middle">D</text><text x="17" y="79" text-anchor="middle">E</text>
+    <defs><marker id="ah" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--wind)"/></marker></defs>
+    <line x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}" stroke="var(--wind)" stroke-width="4" stroke-linecap="round" marker-end="url(#ah)"/>
+    <circle cx="${sx}" cy="${sy}" r="7" fill="var(--wind)"/>
+    <path d="M75 70 l0 12 M70 80 l5 -10 l5 10" stroke="var(--ink)" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+}
+function setDirFromEvent(e){
+  const b=$('dial').getBoundingClientRect(), x=e.clientX-b.left-b.width/2, y=e.clientY-b.top-b.height/2;
+  let d=Math.atan2(x,-y)*180/Math.PI; d=(Math.round(d/22.5)*22.5+360)%360; S.windFrom=d; render();
+}
+let drag=false;
+$('dial').addEventListener('pointerdown',e=>{drag=true;$('dial').setPointerCapture(e.pointerId);setDirFromEvent(e);});
+$('dial').addEventListener('pointermove',e=>drag&&setDirFromEvent(e));
+$('dial').addEventListener('pointerup',()=>drag=false);
+$('dial').addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowUp'){S.windFrom=(S.windFrom+22.5)%360;render();e.preventDefault();}
+  if(e.key==='ArrowLeft'||e.key==='ArrowDown'){S.windFrom=(S.windFrom+337.5)%360;render();e.preventDefault();}});
+
+/* Alvo World Archery: 10 anéis, cores do centro para fora */
+function drawTarget(r){
+  const R=100, sc=R/(S.faceCm/2);
+  const cols=['#F5C400','#F5C400','#E2231A','#E2231A','#1E88D8','#1E88D8','#111','#111','#FFF','#FFF'];
+  const strokes=['#333','#333','#333','#333','#333','#333','#888','#888','#333','#333'];
+  let g='';
+  for(let i=9;i>=0;i--) g+=`<circle r="${R*(i+1)/10}" fill="${cols[i]}" stroke="${strokes[i]}" stroke-width=".6"/>`;
+  g+=`<circle r="${R/20}" fill="none" stroke="#333" stroke-width=".4"/>`;
+  const clamp=v=>Math.max(-108,Math.min(108,v));
+  const ix=clamp(r.lateral.cm*sc), iy=clamp(-r.vertical.cm*sc);
+  const rx=Math.max(3,(r.lateral.range[1]-r.lateral.range[0])/2*sc), ry=Math.max(3,(r.vertical.range[1]-r.vertical.range[0])/2*sc);
+  const ax=clamp(r.aim.xCm*sc), ay=clamp(-r.aim.yCm*sc);
+  g+=`<ellipse cx="${ix}" cy="${iy}" rx="${rx}" ry="${ry}" fill="none" stroke="var(--wind)" stroke-width="2" stroke-dasharray="3 2"/>`;
+  g+=`<line x1="0" y1="0" x2="${ix}" y2="${iy}" stroke="var(--wind)" stroke-width="1.2" stroke-dasharray="2 2"/>`;
+  g+=`<circle cx="${ix}" cy="${iy}" r="4.2" fill="var(--ink)" stroke="var(--surface)" stroke-width="1.5"/>`;
+  g+=`<g transform="translate(${ax} ${ay})" stroke="var(--accent)" stroke-width="2"><circle r="6" fill="none"/><line x1="-10" x2="10"/><line y1="-10" y2="10"/></g>`;
+  $('target').innerHTML=g;
+}
+
+function render(){
+  document.querySelectorAll('#dist button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.v===S.distance));
+  document.querySelectorAll('#face button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.v===S.faceCm));
+  document.querySelectorAll('#bow button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.bow));
+  $('v0').value=S.v0; $('wind').value=S.windKmh; $('gust').value=S.gust;
+  $('v0lbl').textContent=`${S.v0} m/s · ${Math.round(S.v0*3.281)} fps`;
+  $('wlbl').textContent=`${fmt(S.windKmh,1)} km/h`;
+  $('glbl').textContent=`±${Math.round(S.gust*100)}%`;
+  $('dirlbl').textContent=`Vento vindo: ${dirName(S.windFrom)} (${S.windFrom}°)`;
+  $('dial').setAttribute('aria-valuenow',S.windFrom);
+  drawDial();
+
+  const r=WindEngine.calculate(S);
+  const rng=a=>`${fmt(a[0])}–${fmt(a[1])} cm`;
+  const L=r.lateral, V=r.vertical;
+  $('latV').textContent=L.dir?rng(L.range):'0 cm';
+  $('latD').textContent=L.dir?(L.dir==='direita'?'→ Direita':'← Esquerda'):'';
+  $('latS').textContent=L.dir?`Vento ${dirName(S.windFrom).toLowerCase()} → flecha deriva para a ${L.dir} a ${S.distance} m (≈ ${fmt(L.rings,1)} anel${L.rings>=1.5?'s':''}).`:'Sem componente lateral de vento.';
+  $('latP').innerHTML=`<span class="pill">Lateral ${fmt(r.crosswindKmh,1)} km/h</span><span class="pill">Voo ${fmt(r.flightTime[0],2)}–${fmt(r.flightTime[1],2)} s</span><span class="pill conf-${r.confidence}">Confiança ${r.confidence}</span>`;
+  $('verV').textContent=V.dir?rng(V.range):'≈ 0 cm';
+  $('verD').textContent=V.dir?(V.dir==='cima'?'↑ Cima':'↓ Baixo'):'';
+  const aw=r.alongwindKmh;
+  $('verS').textContent=Math.abs(aw)<0.2?'Sem componente de vento a favor ou contra.':
+    aw>0?`Vento de cauda ${fmt(aw,1)} km/h → menos arrasto, flecha acerta mais alto.`:`Vento de frente ${fmt(-aw,1)} km/h → mais arrasto, flecha acerta mais baixo.`;
+  const parts=[];
+  if(Math.abs(r.aim.xCm)>=0.5) parts.push(`${fmt(Math.abs(r.aim.xCm))} cm ${r.aim.xCm<0?'à esquerda':'à direita'}`);
+  if(Math.abs(r.aim.yCm)>=0.5) parts.push(`${fmt(Math.abs(r.aim.yCm))} cm ${r.aim.yCm>0?'acima':'abaixo'}`);
+  $('aimV').textContent=parts.length?'Mire '+parts.join(' e '):'Sem correção';
+  $('aimS').textContent=parts.length?`Em anéis: ${fmt(L.rings,1)} na horizontal${V.dir?`, ${fmt(V.rings,1)} na vertical`:''} (cada anel = ${fmt(r.ringCm,1)} cm na face de ${S.faceCm} cm).`:'Vento sem efeito relevante nesta configuração.';
+  $('tgtH').textContent=`Impacto estimado · ${S.distance} m · alvo ${S.faceCm} cm`;
+  drawTarget(r);
+}
+render();
+</script>
